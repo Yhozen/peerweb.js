@@ -1,6 +1,6 @@
 {
   "name": "peerweb",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "description": "A module to render webpage downloaded via webtorrent",
   "main": "dist/peerweb.js",
   "scripts": {
@@ -62,7 +62,8 @@
     "mainVarName": "peerweb"
   },
   "dependencies": {
-    "async": "^2.6.0"
+    "async": "^2.6.0",
+    "buffer": "^5.0.8"
   },
   "directories": {
     "test": "test"
