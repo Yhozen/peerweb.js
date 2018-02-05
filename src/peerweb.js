@@ -37,15 +37,15 @@ export default class Peerweb {
     this._addSite(name, magnetURI)
   }
 
-  render (magnet) {
+  render (magnet, name) {
     this.debug('Downloading torrent from ' + magnet)
     client.add(magnet, torrent => {
-      //renderFromTorrent(torrent, this)
-      this.publish({name:'test', magnetURI: magnet})
+      renderFromTorrent(torrent, this)
+      this.publish({name, magnetURI: magnet})
     })
   }
 
-  getMagnet (name, files) {
+  getMagnet (files, name) {
     const debug = this.debug.bind(this)
     return new Promise((resolve,reject) => {
       client.seed(files, torrent => {
