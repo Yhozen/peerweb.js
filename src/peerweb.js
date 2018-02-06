@@ -1,17 +1,24 @@
 import WebTorrent from './webtorrent' // or 'webtorrent/webtorrent.min'
 import async from 'async'
 var Buffer = require('buffer/').Buffer
+var rtcConfig = require('./rtcConfig.js')
+
+const announce = [
+  'wss://tracker.fastcast.nz',
+  'wss://tracker.openwebtorrent.com',
+  'wss://tracker.btorrent.xyz'
+]
 
 /* Mutation */
 String.prototype.replaceAll = function (search, replacement) { return this.replace(new RegExp(search, 'g'), replacement) }
 // Initalize WebTorrent
-const client = new WebTorrent()
+const client = new WebTorrent({
+  tracker: { rtcConfig, announce }
+})
+
 // This is shorter
 const { log, info } = console
-const announce = ['wss://tracker.fastcast.nz',
-'wss://tracker.openwebtorrent.com',
-'wss://tracker.btorrent.xyz'
-]
+
 // Create class to export
 export default class Peerweb {
   constructor (debug = false, name = 'defaultapp', onChange = callback) {
