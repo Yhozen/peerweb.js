@@ -30,7 +30,9 @@ export default class Peerweb {
   debug (text) {
     if (this.d) info(text)
   }
-
+  onChange (callback) {
+    this.callback = callback
+  }
   publish (page) {
     this.broadcast({addSite: page})
     const { name, magnetURI } = page
