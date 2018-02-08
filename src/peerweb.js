@@ -13,7 +13,7 @@ const announce = [
 String.prototype.replaceAll = function (search, replacement) { return this.replace(new RegExp(search, 'g'), replacement) }
 // Initalize WebTorrent
 const client = new WebTorrent({
-  tracker: { rtcConfig, announce }
+  tracker: { announce }
 })
 
 // This is shorter
@@ -32,6 +32,10 @@ export default class Peerweb {
     this.render = this.render.bind(this)
     this.broadcast = this.broadcast.bind(this)
     this._addSite = this._addSite.bind(this)
+    this._onPeer = this._onPeer.bind(this)
+    this._onConnect = this._onConnect.bind(this)
+    this._onMessage = this._onMessage.bind(this)
+    this._onClose = this._onClose.bind(this)
   }
 
   debug (text) {
@@ -89,9 +93,60 @@ export default class Peerweb {
       announce
     })
   }
-
   _discoverPeers () {
-    this.tracker.on('peer', peer => onPeer(peer, this))
+    this.tracker.on('peer', peer => this._onPeer(peer, this))
+    this.__peer__ = peer
+  }
+
+  _onPeer () {
+    let { peers,  __peer__: peer} = this
+    if (included(peers, peer)) return undefined
+    peers.push(peer)
+  
+    if (peer.connected) _onConnect()
+    else peer.once('connect', _onConnect)
+  }
+
+  _onConnect () {
+    let  { __peer__: peer, _onClose, _onMessage, peers, broadcast } = this
+    peer.on('data', _onMessage)
+    peer.on('close', _onClose)
+    peer.on('error', _onClose)
+    peer.on('end', _onClose)
+    if (isEmpty(sites)) broadcast({ isEmpty: true })
+  }
+
+  _onMessage (data) {
+    let  { __peer__: peer, sites, _addSite } = this
+    try {
+      data = JSON.parse(data)
+    } catch (err) {
+      console.error(err.message)
+    }
+    if (data.isEmpty) {
+      peer.send(JSON.stringify({ addSites: sites }))
+    }
+
+    if (data.addSite) {
+      const { name, magnetURI } = data.addSite
+      _addSite(name, magnetURI)
+    }
+    if (data.addSites) {
+      let payload = data.addSites
+      if (equalData(payload, sites)) return undefined
+      for (let name of Object.keys(payload)) {
+        _addSite(name, payload[name])
+      } 
+    }
+  }
+
+  _onClose () {
+    let  { __peer__: peer, _onClose, _onMessage, peers } = this
+    peer.removeListener('data', _onMessage)
+    peer.removeListener('close', _onClose)
+    peer.removeListener('error', _onClose)
+    peer.removeListener('end', _onClose)
+    peers.splice(peers.indexOf(peer), 1)
   }
 
 }
@@ -145,55 +200,6 @@ function evaluateJS () {
     document.body.appendChild(scrpt)
     scripts[i].parentElement.removeChild(scripts[i]) // Remove duplication
   }
-}
-
-function onPeer (peer, self) {
-  let { peers, sites, broadcast, _addSite} = self
-  if (included(peers, peer)) return undefined
-  peers.push(peer)
-
-  if (peer.connected) onConnect()
-  else peer.once('connect', onConnect)
-
-  function onConnect () {
-    peer.on('data', onMessage)
-    peer.on('close', onClose)
-    peer.on('error', onClose)
-    peer.on('end', onClose)
-    if (isEmpty(sites)) broadcast({ isEmpty: true })
-  }
-
-  function onClose () {
-    peer.removeListener('data', onMessage)
-    peer.removeListener('close', onClose)
-    peer.removeListener('error', onClose)
-    peer.removeListener('end', onClose)
-    peers.splice(peers.indexOf(peer), 1)
-  }
-
-  function onMessage (data) {
-    try {
-      data = JSON.parse(data)
-    } catch (err) {
-      console.error(err.message)
-    }
-    if (data.isEmpty) {
-      peer.send(JSON.stringify({ addSites: sites }))
-    }
-
-    if (data.addSite) {
-      const { name, magnetURI } = data.addSite
-      _addSite(name, magnetURI)
-    }
-    if (data.addSites) {
-      let payload = data.addSites
-      if (equalData(payload, sites)) return undefined
-      for (let name of Object.keys(payload)) {
-        _addSite(name, payload[name])
-      } 
-    }
-  }
-  
 }
 
 function equalData (original, newer)  {
