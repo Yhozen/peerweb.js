@@ -9,11 +9,12 @@ const announce = [
   'wss://tracker.btorrent.xyz'
 ]
 
-/* Mutation */
+
+// Mutation
 String.prototype.replaceAll = function (search, replacement) { return this.replace(new RegExp(search, 'g'), replacement) }
 // Initalize WebTorrent
 const client = new WebTorrent({
-  tracker: { announce }
+  tracker: { config: rtcConfig, announce }
 })
 
 // This is shorter
@@ -94,12 +95,12 @@ export default class Peerweb {
     })
   }
   _discoverPeers () {
-    this.tracker.on('peer', peer => this._onPeer(peer, this))
-    this.__peer__ = peer
+    this.tracker.on('peer', this._onPeer)
   }
 
-  _onPeer () {
-    let { peers,  __peer__: peer} = this
+  _onPeer (peer) {
+    this.__peer__ = peer
+    let { peers, _onConnect } = this
     if (included(peers, peer)) return undefined
     peers.push(peer)
   
@@ -108,7 +109,8 @@ export default class Peerweb {
   }
 
   _onConnect () {
-    let  { __peer__: peer, _onClose, _onMessage, peers, broadcast } = this
+    let  { __peer__, _onClose, _onMessage, peers, broadcast, sites } = this
+    const peer = __peer__
     peer.on('data', _onMessage)
     peer.on('close', _onClose)
     peer.on('error', _onClose)
@@ -117,7 +119,8 @@ export default class Peerweb {
   }
 
   _onMessage (data) {
-    let  { __peer__: peer, sites, _addSite } = this
+    let  { __peer__, sites, _addSite } = this    
+    const peer = __peer__
     try {
       data = JSON.parse(data)
     } catch (err) {
@@ -141,7 +144,8 @@ export default class Peerweb {
   }
 
   _onClose () {
-    let  { __peer__: peer, _onClose, _onMessage, peers } = this
+    let  { __peer__, _onClose, _onMessage, peers } = this
+    const peer = __peer__
     peer.removeListener('data', _onMessage)
     peer.removeListener('close', _onClose)
     peer.removeListener('error', _onClose)
