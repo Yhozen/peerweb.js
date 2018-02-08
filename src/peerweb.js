@@ -14,7 +14,7 @@ const announce = [
 String.prototype.replaceAll = function (search, replacement) { return this.replace(new RegExp(search, 'g'), replacement) }
 // Initalize WebTorrent
 const client = new WebTorrent({
-  tracker: { config: rtcConfig, announce }
+  tracker: { rtcConfig, announce }
 })
 
 // This is shorter
@@ -27,7 +27,7 @@ export default class Peerweb {
     this.d = debug
     this.hash = new Buffer(20).fill(name)
     this.peers = []
-    this._discoverPeers()
+    this.__peer__ = null
     this.sites = {}
     this.publish = this.publish.bind(this)
     this.render = this.render.bind(this)
@@ -37,6 +37,7 @@ export default class Peerweb {
     this._onConnect = this._onConnect.bind(this)
     this._onMessage = this._onMessage.bind(this)
     this._onClose = this._onClose.bind(this)
+    this._discoverPeers()
   }
 
   debug (text) {
